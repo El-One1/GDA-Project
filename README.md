@@ -2,6 +2,7 @@
 Charles &amp; Elouan, 
 - The Details Matter: Preventing Class Collapse in Supervised Contrastive Learning [paper link](https://mdpi-res.com/d_attachment/csmf/csmf-03-00004/article_deploy/csmf-03-00004.pdf?version=1650444797)
 - [consignes projet](https://notes.inria.fr/kRDAr2fmSI6Bw5tbBz0y1g#)
+- [report overleaf](https://www.overleaf.com/4548983824dskwwxgsthcy#58a21c)
 
 Idées :
 
