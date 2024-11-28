@@ -4,6 +4,10 @@ Charles &amp; Elouan,
 - [consignes projet](https://notes.inria.fr/kRDAr2fmSI6Bw5tbBz0y1g#)
 - [report overleaf](https://www.overleaf.com/4548983824dskwwxgsthcy#58a21c)
 
+Load data:
+- run "wget -O waterbirds.tar.gz [copy this link](https://nlp.stanford.edu/data/dro/waterbird_complete95_forest2water2.tar.gz)"
+- then extract with "tar -xvzf waterbirds.tar.gz"
+
 Idées :
 
 - à quel point est-ce que les résultats sont applicables suivant les types de données (données médicales ? données + complexes type vidéo ?) (ça se rapproche de ce que tu disais sur le dataset)
