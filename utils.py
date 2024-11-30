@@ -12,23 +12,39 @@ import numpy as np
 
 
 
-def tsne_visualization(embeddings, labels, title="t-SNE Visualization"):
+def tsne_visualization(embeddings, labels, stratum, title="t-SNE Visualization"):
 
     
     embeddings = np.asarray(embeddings)
     labels = np.asarray(labels)
+    stratum = np.asarray(stratum)
     
-    tsne = TSNE(n_components=2, perplexity=30, learning_rate=200, random_state=42)
-    tsne_results = tsne.fit_transform(embeddings)
+    tsne_labels = TSNE(n_components=2, perplexity=30, learning_rate=200, random_state=42)
+    tsne_results_labels = tsne_labels.fit_transform(embeddings)
 
-    plt.figure(figsize=(10, 8))
-    scatter = plt.scatter(tsne_results[:, 0], tsne_results[:, 1], c=labels, cmap='tab10', alpha=0.7, s=10)
-    plt.colorbar(scatter, label='Classes')
-    plt.title(title)
+    tsne_stratum = TSNE(n_components=2, perplexity=30, learning_rate=200, random_state=42)
+    tsne_results_stratum = tsne_stratum.fit_transform(embeddings)
+
+    plt.figure(figsize=(14, 7))
+
+    plt.subplot(1, 2, 1)
+    scatter_labels = plt.scatter(tsne_results_labels[:, 0], tsne_results_labels[:, 1], c=labels, cmap='tab10', alpha=0.7, s=10)
+    plt.colorbar(scatter_labels, label='Classes')
+    plt.title(f"{title} - Classes")
     plt.xlabel("t-SNE Component 1")
     plt.ylabel("t-SNE Component 2")
     plt.grid(True, linestyle='--', alpha=0.5)
-    
+
+    plt.subplot(1, 2, 2)
+    scatter_stratum = plt.scatter(tsne_results_stratum[:, 0], tsne_results_stratum[:, 1], c=stratum, cmap='tab20', alpha=0.7, s=10)
+    plt.colorbar(scatter_stratum, label='Strata')
+    plt.title(f"{title} - Strata")
+    plt.xlabel("t-SNE Component 1")
+    plt.ylabel("t-SNE Component 2")
+    plt.grid(True, linestyle='--', alpha=0.5)
+
+    # Adjust layout and display
+    plt.tight_layout()
     plt.show()
 
 
@@ -55,7 +71,7 @@ def full_loss(features, labels, alpha=0.5, temperature = 0.5):
 
     ################## LREP LOSS ##################
 
-    exp_positive_sim = torch.exp(similarity_matrix) 
+    exp_positive_sim = torch.exp(similarity_matrix) * positive_mask
     repel_loss_tempo = -torch.log(exp_positive_sim.diagonal() / exp_positive_sim.sum(dim=1))
     repel_loss = repel_loss_tempo.mean()
 
