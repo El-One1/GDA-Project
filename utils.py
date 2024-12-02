@@ -12,7 +12,7 @@ import numpy as np
 
 
 
-def tsne_visualization(embeddings, labels, stratum, title="t-SNE Visualization"):
+def tsne_visualization(embeddings, labels, stratum, title="t-SNE Visualization", save_path = None):
 
     
     embeddings = np.asarray(embeddings)
@@ -46,6 +46,8 @@ def tsne_visualization(embeddings, labels, stratum, title="t-SNE Visualization")
     # Adjust layout and display
     plt.tight_layout()
     plt.show()
+    if save_path:
+        plt.savefig(save_path)
 
 
 def full_loss(features, labels, alpha=0.5, temperature = 0.5):
