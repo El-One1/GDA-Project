@@ -2,6 +2,8 @@ import torch
 from torch.utils.data import Dataset
 import torch.nn.functional as F
 
+from torchvision import transforms
+
 from PIL import Image
 import pandas as pd
 import os
@@ -43,7 +45,6 @@ def tsne_visualization(embeddings, labels, stratum, title="t-SNE Visualization",
     plt.ylabel("t-SNE Component 2")
     plt.grid(True, linestyle='--', alpha=0.5)
 
-    # Adjust layout and display
     plt.tight_layout()
     plt.show()
     if save_path:
@@ -97,8 +98,7 @@ class WaterbirdsFullData(Dataset):
         self.class_to_idx = {self.classes[i]: i for i in range(len(self.classes))}
         self.idx_to_class = {i: self.classes[i] for i in range(len(self.classes))}
 
-        # Build the full samples list
-        # Map from image path to metadata row
+
         self.samples = []
         for class_name, _ in self.class_to_idx.items():
             class_folder = os.path.join(root, class_name)
@@ -121,11 +121,96 @@ class WaterbirdsFullData(Dataset):
         """
         img_path, label, strata = self.samples[idx]
 
-        # Load the image
         img = Image.open(img_path).convert('RGB')
 
-        # Apply transformations if provided
         if self.transform is not None:
             img = self.transform(img)
         
         return img, label, strata
+
+
+
+
+class CIFAR100CoarseUnbalanced(Dataset):
+
+    
+    def __init__(self, original_dataset):
+        
+        super_class_sub_class_correspondence = {0: [4, 30, 55, 72, 95],
+                                        1: [1, 32, 67, 73, 91],
+                                        2: [14, 20, 25, 41, 45],
+                                        3: [8, 9, 16, 61, 84],
+                                        4: [0, 51, 53, 57, 83],
+                                        5: [6, 7, 13, 22, 39],
+                                        6: [11, 24, 26, 27, 33],
+                                        7: [3, 10, 28, 54, 90],
+                                        8: [18, 34, 58, 59, 71],
+                                        9: [5, 17, 40, 46, 60],
+                                        10: [12, 15, 19, 42, 56],
+                                        11: [2, 23, 43, 44, 52],
+                                        12: [10, 35, 47, 48, 49],
+                                        13: [5, 38, 50, 65, 75],
+                                        14: [19, 21, 31, 37, 70],
+                                        15: [13, 62, 76, 77, 85],
+                                        16: [15, 64, 66, 78, 86],
+                                        17: [17, 29, 63, 68, 79],
+                                        18: [18, 36, 74, 80, 92],
+                                        19: [19, 21, 31, 37, 70]}
+
+        sub_classes_proportion_inside_superclasses = [500, 250, 100, 50, 50]
+
+
+        self.data = np.zeros((20 * sum(sub_classes_proportion_inside_superclasses), 32, 32, 3))
+        self.targets = np.zeros(20 * sum(sub_classes_proportion_inside_superclasses))
+        self.original_targets = original_dataset.targets
+        self.original_target_link = np.zeros(20 * sum(sub_classes_proportion_inside_superclasses))
+        
+        sub_classes_proportion_inside_superclasses = np.array(sub_classes_proportion_inside_superclasses)
+        
+        data_idx = 0  
+        
+        for superclass in range(20):
+            for i, subclass in enumerate(super_class_sub_class_correspondence[superclass]):
+
+                indices = np.where(np.array(self.original_targets) == subclass)[0]
+                selected_indices = np.random.choice(indices, sub_classes_proportion_inside_superclasses[i], replace=False)
+                
+                for j, idx in enumerate(selected_indices):
+
+                    final_idx = data_idx + j
+                    
+                    self.data[final_idx] = original_dataset.data[idx]
+                    self.targets[final_idx] = superclass
+                    self.original_target_link[final_idx] = subclass
+                
+                data_idx += sub_classes_proportion_inside_superclasses[i]
+    
+    def __len__(self):
+        return len(self.targets)
+    
+    def __getitem__(self, idx):
+        #transform np array to torch tensor and put (C, H, W) instead of (H, W, C), and normalize for imagenet stats
+        imagenet_stats = [[0.485, 0.456, 0.406], [0.229, 0.224, 0.225]]
+        data = transforms.functional.to_tensor(self.data[idx] / 255)
+        data = transforms.functional.normalize(data, *imagenet_stats)
+
+        return data, self.targets[idx], self.original_target_link[idx]
+    
+def sparse2coarse(targets):
+    """Convert Pytorch CIFAR100 sparse targets to coarse targets.
+
+    Usage:
+        trainset = torchvision.datasets.CIFAR100(path)
+        trainset.targets = sparse2coarse(trainset.targets)
+    """
+    coarse_labels = np.array([ 4,  1, 14,  8,  0,  6,  7,  7, 18,  3,  
+                               3, 14,  9, 18,  7, 11,  3,  9,  7, 11,
+                               6, 11,  5, 10,  7,  6, 13, 15,  3, 15,  
+                               0, 11,  1, 10, 12, 14, 16,  9, 11,  5, 
+                               5, 19,  8,  8, 15, 13, 14, 17, 18, 10, 
+                               16, 4, 17,  4,  2,  0, 17,  4, 18, 17, 
+                               10, 3,  2, 12, 12, 16, 12,  1,  9, 19,  
+                               2, 10,  0,  1, 16, 12,  9, 13, 15, 13, 
+                              16, 19,  2,  4,  6, 19,  5,  5,  8, 19, 
+                              18,  1,  2, 15,  6,  0, 17,  8, 14, 13])
+    return coarse_labels[targets]
