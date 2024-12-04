@@ -1,6 +1,7 @@
 import torch
 from torch.utils.data import Dataset
 import torch.nn.functional as F
+import torch.nn as nn
 
 from torchvision import transforms
 
@@ -136,26 +137,30 @@ class CIFAR100CoarseUnbalanced(Dataset):
     
     def __init__(self, original_dataset):
         
-        super_class_sub_class_correspondence = {0: [4, 30, 55, 72, 95],
-                                        1: [1, 32, 67, 73, 91],
-                                        2: [14, 20, 25, 41, 45],
-                                        3: [8, 9, 16, 61, 84],
-                                        4: [0, 51, 53, 57, 83],
-                                        5: [6, 7, 13, 22, 39],
-                                        6: [11, 24, 26, 27, 33],
-                                        7: [3, 10, 28, 54, 90],
-                                        8: [18, 34, 58, 59, 71],
-                                        9: [5, 17, 40, 46, 60],
-                                        10: [12, 15, 19, 42, 56],
-                                        11: [2, 23, 43, 44, 52],
-                                        12: [10, 35, 47, 48, 49],
-                                        13: [5, 38, 50, 65, 75],
-                                        14: [19, 21, 31, 37, 70],
-                                        15: [13, 62, 76, 77, 85],
-                                        16: [15, 64, 66, 78, 86],
-                                        17: [17, 29, 63, 68, 79],
-                                        18: [18, 36, 74, 80, 92],
-                                        19: [19, 21, 31, 37, 70]}
+        self.super_class_sub_class_correspondence = {4: [0, 51, 53, 57, 83],
+                                                    1: [1, 32, 67, 73, 91],
+                                                    14: [2, 11, 35, 46, 98],
+                                                    8: [3, 42, 43, 88, 97],
+                                                    0: [4, 30, 55, 72, 95],
+                                                    6: [5, 20, 25, 84, 94],
+                                                    7: [6, 7, 14, 18, 24],
+                                                    18: [8, 13, 48, 58, 90],
+                                                    3: [9, 10, 16, 28, 61],
+                                                    9: [12, 17, 37, 68, 76],
+                                                    11: [15, 19, 21, 31, 38],
+                                                    5: [22, 39, 40, 86, 87],
+                                                    10: [23, 33, 49, 60, 71],
+                                                    13: [26, 45, 77, 79, 99],
+                                                    15: [27, 29, 44, 78, 93],
+                                                    12: [34, 63, 64, 66, 75],
+                                                    16: [36, 50, 65, 74, 80],
+                                                    19: [41, 69, 81, 85, 89],
+                                                    17: [47, 52, 56, 59, 96],
+                                                    2: [54, 62, 70, 82, 92]}
+        
+        self.super_class_sub_class_correspondence = {k: self.super_class_sub_class_correspondence[k] 
+                                               for k in sorted(self.super_class_sub_class_correspondence.keys())}
+
 
         sub_classes_proportion_inside_superclasses = [500, 250, 100, 50, 50]
 
@@ -170,7 +175,7 @@ class CIFAR100CoarseUnbalanced(Dataset):
         data_idx = 0  
         
         for superclass in range(20):
-            for i, subclass in enumerate(super_class_sub_class_correspondence[superclass]):
+            for i, subclass in enumerate(self.super_class_sub_class_correspondence[superclass]):
 
                 indices = np.where(np.array(self.original_targets) == subclass)[0]
                 selected_indices = np.random.choice(indices, sub_classes_proportion_inside_superclasses[i], replace=False)
@@ -194,9 +199,9 @@ class CIFAR100CoarseUnbalanced(Dataset):
         data = transforms.functional.to_tensor(self.data[idx] / 255)
         data = transforms.functional.normalize(data, *imagenet_stats)
 
-        return data, self.targets[idx], self.original_target_link[idx]
+        return data.float(), self.targets[idx], self.original_target_link[idx]
     
-def sparse2coarse(targets):
+def sparse2coarse(targets):  ### source: https://github.com/ryanchankh/cifar100coarse/blob/master/sparse2coarse.py
     """Convert Pytorch CIFAR100 sparse targets to coarse targets.
 
     Usage:
@@ -214,3 +219,31 @@ def sparse2coarse(targets):
                               16, 19,  2,  4,  6, 19,  5,  5,  8, 19, 
                               18,  1,  2, 15,  6,  0, 17,  8, 14, 13])
     return coarse_labels[targets]
+
+
+class CustomViT(nn.Module):
+    def __init__(self, num_classes=10, patch_size=4, num_layers=7, embed_dim=256, num_heads=4, ff_dim=512):
+        super(CustomViT, self).__init__()
+
+        self.patch_embed = nn.Conv2d(in_channels=3, out_channels=embed_dim, kernel_size=patch_size, stride=patch_size)
+
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=embed_dim, 
+            nhead=num_heads, 
+            dim_feedforward=ff_dim, 
+            dropout=0.1
+        )
+        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+
+        self.fc = nn.Linear(embed_dim, num_classes)
+
+    def forward(self, x):
+        x = self.patch_embed(x)  # Shape: (batch_size, embed_dim, num_patches, 1)
+        x = x.flatten(2).transpose(1, 2)  # Shape: (batch_size, num_patches, embed_dim)
+
+        x = self.transformer(x)
+
+        x = x.mean(dim=1)
+
+        x = self.fc(x)
+        return x
