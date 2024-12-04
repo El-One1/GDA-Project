@@ -1,7 +1,7 @@
 # GDA-Project
 Charles Monté &amp; Elouan Gardès, 
 - The Details Matter: Preventing Class Collapse in Supervised Contrastive Learning [paper link](https://mdpi-res.com/d_attachment/csmf/csmf-03-00004/article_deploy/csmf-03-00004.pdf?version=1650444797)
-- [Our paper](https://www.overleaf.com/4548983824dskwwxgsthcy#58a21c)
+- [Our paper]([https://www.overleaf.com/4548983824dskwwxgsthcy#58a21c](https://github.com/El-One1/GDA-Project/blob/main/Avoiding_class_colapse_with_repel_extension_paper.pdf))
 
 Load data:
 - run "wget -O waterbirds.tar.gz [copy this link](https://nlp.stanford.edu/data/dro/waterbird_complete95_forest2water2.tar.gz)"
