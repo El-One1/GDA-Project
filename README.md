@@ -9,5 +9,7 @@ Load data:
 
 Place this data in the parent folder and the code should be usable as is. No requirements is added as any torch, torchvision packages should work and no additionnal exotic library is used.
 
-
-
+- reproduce is a notebook where experiments can be run to reproduce the original paper's experiments.
+- experiments_waterbirds is a python file aimed at running experiments all at once and display results/create plots.
+- cifar100[] is a notebook aimed at reproducing experiments from the original paper. It fails at doing so.
+- utils contain plot function, datasets loading and other utilities used in the rest of this repo.
